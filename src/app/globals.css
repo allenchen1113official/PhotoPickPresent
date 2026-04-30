@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0f0f0f;
+  --surface: #1a1a1a;
+  --border: #2e2e2e;
+  --text: #e5e5e5;
+  --muted: #888;
+  --accent: #f59e0b;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+/* Histogram canvas */
+.histogram-bar { display: inline-block; }
+
+/* Rating stars */
+.star { cursor: pointer; transition: transform 0.1s; }
+.star:hover { transform: scale(1.2); }
+
+/* Photo card hover */
+.photo-card { transition: transform 0.2s, box-shadow 0.2s; }
+.photo-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.6); }

@@ -1,0 +1,35 @@
+{
+  "name": "photo-pick-present",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "export:photos": "node scripts/export-photos.mjs",
+    "build:gh-pages": "bash scripts/build-gh-pages.sh",
+    "preview:gh-pages": "npx serve out -p 3001"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.17.3",
+    "clsx": "^2.1.1",
+    "exifr": "^7.1.3",
+    "googleapis": "^144.0.0",
+    "next": "14.2.5",
+    "next-auth": "^4.24.7",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.5",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}
