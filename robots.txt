@@ -1,0 +1,7 @@
+User-Agent: *
+Allow: /gallery
+Disallow: /admin
+Disallow: /api/
+
+Host: https://your-domain.com
+Sitemap: https://your-domain.com/sitemap.xml

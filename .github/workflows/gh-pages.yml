@@ -1,0 +1,80 @@
+name: 🚀 部署前台相簿到 GitHub Pages
+
+on:
+  # 每次推送 main 分支自動部署
+  push:
+    branches: [main]
+  # 也可手動觸發（方便在後台更新照片後重新部署）
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: '部署原因（選填）'
+        required: false
+        default: '手動更新照片'
+
+# GitHub Pages 部署需要的權限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一時間只允許一個部署，避免衝突
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: 建置靜態相簿
+    runs-on: ubuntu-latest
+    steps:
+      # ── 1. 取得程式碼 ─────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. 設定 Node.js ───────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ── 3. 安裝套件 ───────────────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 4. 靜態建置（匯出照片 + 暫移 API routes + next build）
+      - name: Build static site for GitHub Pages
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          # GitHub Pages 子目錄：/repo-name
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          # SEO 正式網址
+          NEXTAUTH_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        run: bash scripts/build-gh-pages.sh
+
+      # ── 6. 設定 GitHub Pages ──────────────────────────────
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      # ── 7. 上傳靜態檔案 ───────────────────────────────────
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: out/
+
+  deploy:
+    name: 部署到 GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
