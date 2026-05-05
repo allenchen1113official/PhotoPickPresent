@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import { SessionProvider } from '@/components/SessionProvider'
+import { SessionProvider } from '@/components/providers/SessionProvider'
 
 const SITE_NAME = 'Allen Chen Photography'
 const SITE_DESC = '用光影記錄生活瞬間｜風景、人像、街頭攝影作品集。每一張照片都是一個故事。'
