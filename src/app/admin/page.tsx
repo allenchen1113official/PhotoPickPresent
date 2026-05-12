@@ -41,25 +41,48 @@ export default function AdminPage() {
             前往前台 →
           </a>
           {session ? (
-            <div className="flex items-center gap-2">
-              {session.user?.image && (
-                <img src={session.user.image} alt="" className="w-7 h-7 rounded-full" />
+            <div className="flex items-center gap-3">
+              {/* OneDrive connection badge or button */}
+              {(session as any).microsoftAccessToken ? (
+                <span className="text-xs text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-1 rounded-lg">
+                  OneDrive ✓
+                </span>
+              ) : (
+                <button
+                  onClick={() => signIn('azure-ad')}
+                  className="text-xs text-gray-400 hover:text-blue-300 bg-[#242424] hover:bg-[#2a2a35] border border-[#3a3a3a] px-2 py-1 rounded-lg transition-colors"
+                >
+                  + OneDrive
+                </button>
               )}
-              <span className="text-xs text-gray-400">{session.user?.name}</span>
-              <button
-                onClick={() => signOut()}
-                className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded"
-              >
-                登出
-              </button>
+              <div className="flex items-center gap-2">
+                {session.user?.image && (
+                  <img src={session.user.image} alt="" className="w-7 h-7 rounded-full" />
+                )}
+                <span className="text-xs text-gray-400">{session.user?.name}</span>
+                <button
+                  onClick={() => signOut()}
+                  className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded"
+                >
+                  登出
+                </button>
+              </div>
             </div>
           ) : (
-            <button
-              onClick={() => signIn('google')}
-              className="text-xs bg-[#242424] hover:bg-[#2e2e2e] border border-[#3a3a3a] px-3 py-1.5 rounded-lg transition-colors"
-            >
-              Google 登入
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => signIn('google')}
+                className="text-xs bg-[#242424] hover:bg-[#2e2e2e] border border-[#3a3a3a] px-3 py-1.5 rounded-lg transition-colors"
+              >
+                Google 登入
+              </button>
+              <button
+                onClick={() => signIn('azure-ad')}
+                className="text-xs bg-[#1a2535] hover:bg-[#1e2d42] border border-[#0078D4]/40 text-blue-300 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                Microsoft 登入
+              </button>
+            </div>
           )}
         </div>
       </nav>
@@ -68,7 +91,7 @@ export default function AdminPage() {
       <main className="px-6 py-6 max-w-7xl mx-auto">
         {activeTab === 'import' && (
           <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-6">
-            <h2 className="text-lg font-semibold mb-4 text-white">從 Google Drive 匯入</h2>
+            <h2 className="text-lg font-semibold mb-4 text-white">從雲端匯入照片</h2>
             <DriveImporter onImported={() => setRefreshKey((k) => k + 1)} />
           </div>
         )}
