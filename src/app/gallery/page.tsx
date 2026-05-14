@@ -126,6 +126,13 @@ export default function GalleryPage() {
               <option value="likes_desc">最多讚</option>
             </select>
             <span className="text-gray-600 text-sm">{total} 張</span>
+            <a
+              href={`${BASE_PATH}/admin`}
+              className="text-gray-700 hover:text-gray-400 text-xs transition-colors"
+              title="後台管理"
+            >
+              ⚙
+            </a>
           </div>
         </div>
       </header>
