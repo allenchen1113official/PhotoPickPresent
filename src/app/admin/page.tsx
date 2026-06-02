@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic'
 
 const IS_STATIC = process.env.NEXT_PUBLIC_STATIC_MODE === 'true'
 const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL || ''
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || ''
 
 const AdminClient = dynamic(() => import('./AdminClient'), { ssr: false })
 
@@ -31,7 +32,7 @@ export default function AdminPage() {
           )}
           <div className="mt-8">
             <a
-              href="../gallery"
+              href={`${BASE_PATH}/gallery`}
               className="text-gray-600 hover:text-gray-400 text-xs transition-colors"
             >
               ← 回到相簿
