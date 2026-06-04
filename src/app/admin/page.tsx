@@ -1,105 +1,47 @@
 'use client'
-import { useState } from 'react'
-import { useSession, signIn, signOut } from 'next-auth/react'
-import DriveImporter from '@/components/admin/DriveImporter'
-import PhotoGrid from '@/components/admin/PhotoGrid'
+import dynamic from 'next/dynamic'
+
+const IS_STATIC = process.env.NEXT_PUBLIC_STATIC_MODE === 'true'
+const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL || ''
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || ''
+
+const AdminClient = dynamic(() => import('./AdminClient'), { ssr: false })
 
 export default function AdminPage() {
-  const { data: session } = useSession()
-  const [activeTab, setActiveTab] = useState<'photos' | 'import'>('photos')
-  const [refreshKey, setRefreshKey] = useState(0)
-
-  return (
-    <div className="min-h-screen bg-[#0f0f0f] text-gray-100">
-      {/* Navbar */}
-      <nav className="sticky top-0 z-40 bg-[#0f0f0f]/90 backdrop-blur border-b border-[#2e2e2e] px-6 py-3 flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <span className="text-amber-500 text-xl">📷</span>
-          <span className="font-semibold text-white">攝影管理後台</span>
-        </div>
-        <div className="flex gap-1 ml-6">
-          {(['photos', 'import'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-1.5 text-sm rounded-lg transition-colors ${
-                activeTab === tab
-                  ? 'bg-amber-500 text-black font-medium'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-[#242424]'
-              }`}
+  if (IS_STATIC) {
+    return (
+      <div className="min-h-screen bg-[#0f0f0f] text-gray-100 flex items-center justify-center">
+        <div className="text-center max-w-md px-6">
+          <div className="text-amber-500 text-5xl mb-6">📷</div>
+          <h1 className="text-white text-2xl font-bold mb-3">攝影管理後台</h1>
+          <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+            後台管理需要動態伺服器環境（Vercel），目前的 GitHub Pages 靜態版本不支援登入功能。
+          </p>
+          {ADMIN_URL ? (
+            <a
+              href={ADMIN_URL}
+              className="inline-block bg-amber-500 hover:bg-amber-400 text-black font-semibold px-6 py-2.5 rounded-lg text-sm transition-colors"
             >
-              {tab === 'photos' ? '📁 照片管理' : '☁️ 匯入照片'}
-            </button>
-          ))}
-        </div>
-        <div className="ml-auto flex items-center gap-3">
-          <a
-            href="/gallery"
-            target="_blank"
-            className="text-xs text-gray-400 hover:text-amber-400 transition-colors"
-          >
-            前往前台 →
-          </a>
-          {session ? (
-            <div className="flex items-center gap-3">
-              {/* OneDrive connection badge or button */}
-              {(session as any).microsoftAccessToken ? (
-                <span className="text-xs text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-1 rounded-lg">
-                  OneDrive ✓
-                </span>
-              ) : (
-                <button
-                  onClick={() => signIn('azure-ad')}
-                  className="text-xs text-gray-400 hover:text-blue-300 bg-[#242424] hover:bg-[#2a2a35] border border-[#3a3a3a] px-2 py-1 rounded-lg transition-colors"
-                >
-                  + OneDrive
-                </button>
-              )}
-              <div className="flex items-center gap-2">
-                {session.user?.image && (
-                  <img src={session.user.image} alt="" className="w-7 h-7 rounded-full" />
-                )}
-                <span className="text-xs text-gray-400">{session.user?.name}</span>
-                <button
-                  onClick={() => signOut()}
-                  className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded"
-                >
-                  登出
-                </button>
-              </div>
-            </div>
+              前往後台管理 →
+            </a>
           ) : (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => signIn('google')}
-                className="text-xs bg-[#242424] hover:bg-[#2e2e2e] border border-[#3a3a3a] px-3 py-1.5 rounded-lg transition-colors"
-              >
-                Google 登入
-              </button>
-              <button
-                onClick={() => signIn('azure-ad')}
-                className="text-xs bg-[#1a2535] hover:bg-[#1e2d42] border border-[#0078D4]/40 text-blue-300 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                Microsoft 登入
-              </button>
-            </div>
+            <p className="text-gray-600 text-xs">
+              請在 Vercel 部署版本上登入後台。<br />
+              如需設定連結，請在環境變數加入 <code className="text-amber-600">NEXT_PUBLIC_ADMIN_URL</code>。
+            </p>
           )}
-        </div>
-      </nav>
-
-      {/* Content */}
-      <main className="px-6 py-6 max-w-7xl mx-auto">
-        {activeTab === 'import' && (
-          <div className="bg-[#1a1a1a] rounded-xl border border-[#2e2e2e] p-6">
-            <h2 className="text-lg font-semibold mb-4 text-white">從雲端匯入照片</h2>
-            <DriveImporter onImported={() => setRefreshKey((k) => k + 1)} />
+          <div className="mt-8">
+            <a
+              href={`${BASE_PATH}/gallery`}
+              className="text-gray-600 hover:text-gray-400 text-xs transition-colors"
+            >
+              ← 回到相簿
+            </a>
           </div>
-        )}
+        </div>
+      </div>
+    )
+  }
 
-        {activeTab === 'photos' && (
-          <PhotoGrid refreshKey={refreshKey} />
-        )}
-      </main>
-    </div>
-  )
+  return <AdminClient />
 }

@@ -53,6 +53,8 @@ jobs:
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          # 靜態版 /admin 頁面的「前往後台管理」按鈕連結（填入 Vercel 後台網址）
+          NEXT_PUBLIC_ADMIN_URL: ${{ secrets.NEXT_PUBLIC_ADMIN_URL }}
         run: bash scripts/build-gh-pages.sh
 
       # ── 5. 推送 out/ 到 gh-pages 分支 ────────────────────
