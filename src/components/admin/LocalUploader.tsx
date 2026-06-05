@@ -1,6 +1,9 @@
 'use client'
 import { useState, useRef, useCallback } from 'react'
 
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || ''
+const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || ''
+
 interface LocalFile {
   id: string
   file: File
@@ -39,7 +42,23 @@ async function extractExif(file: File): Promise<Record<string, unknown>> {
   }
 }
 
-function openFilePicker(opts: { capture?: string; multiple?: boolean; onChange: (files: FileList) => void }) {
+async function uploadToCloudinary(file: File): Promise<{ url: string; publicId: string }> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('upload_preset', UPLOAD_PRESET)
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+    method: 'POST',
+    body: form,
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err?.error?.message || `Cloudinary 上傳失敗（HTTP ${res.status}）`)
+  }
+  const data = await res.json()
+  return { url: data.secure_url, publicId: data.public_id }
+}
+
+function openFilePicker(opts: { capture?: string; multiple?: boolean; onChange: (f: FileList) => void }) {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'image/*'
@@ -54,6 +73,23 @@ export default function LocalUploader({ onImported }: { onImported: () => void }
   const [dragging, setDragging] = useState(false)
   const [uploadingAll, setUploadingAll] = useState(false)
   const dropRef = useRef<HTMLDivElement>(null)
+
+  // 未設定 Cloudinary 時顯示設定提示
+  if (!CLOUD_NAME || !UPLOAD_PRESET) {
+    return (
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-6 text-sm space-y-3">
+        <p className="text-amber-400 font-semibold">⚙️ 需要設定 Cloudinary 環境變數</p>
+        <p className="text-gray-400">請在 Vercel 的 Environment Variables 加入以下兩個變數，然後 Redeploy：</p>
+        <div className="bg-[#111] rounded-lg p-3 font-mono text-xs text-gray-300 space-y-1">
+          <div>NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = <span className="text-amber-400">你的 Cloud name</span></div>
+          <div>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET = <span className="text-amber-400">你的 Upload preset</span></div>
+        </div>
+        <p className="text-gray-500 text-xs">
+          免費申請：cloudinary.com → Settings → Upload → Upload presets → 新增 unsigned preset
+        </p>
+      </div>
+    )
+  }
 
   function addRawFiles(rawFiles: FileList | File[]) {
     const items: LocalFile[] = Array.from(rawFiles)
@@ -78,17 +114,30 @@ export default function LocalUploader({ onImported }: { onImported: () => void }
   async function uploadOne(localFile: LocalFile) {
     setFiles(prev => prev.map(f => f.id === localFile.id ? { ...f, status: 'uploading', error: undefined } : f))
     try {
-      const exif = await extractExif(localFile.file)
-      const formData = new FormData()
-      formData.append('file', localFile.file)
-      formData.append('exif', JSON.stringify(exif))
-      const res = await fetch('/api/photos/upload', { method: 'POST', body: formData })
+      const [exif, { url, publicId }] = await Promise.all([
+        extractExif(localFile.file),
+        uploadToCloudinary(localFile.file),
+      ])
+
+      const res = await fetch('/api/photos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          drive_type: 'local',
+          drive_id: `cloudinary_${publicId}`,
+          filename: localFile.file.name,
+          thumbnail_url: url,
+          full_url: url,
+          exif,
+        }),
+      })
+
       if (res.ok || res.status === 409) {
         setFiles(prev => prev.map(f => f.id === localFile.id ? { ...f, status: 'done' } : f))
         onImported()
       } else {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || `HTTP ${res.status}`)
+        throw new Error(data.error || `儲存失敗（HTTP ${res.status}）`)
       }
     } catch (e: any) {
       setFiles(prev => prev.map(f => f.id === localFile.id ? { ...f, status: 'error', error: e.message } : f))
@@ -137,7 +186,7 @@ export default function LocalUploader({ onImported }: { onImported: () => void }
         </div>
       </div>
 
-      {/* Mobile-friendly buttons */}
+      {/* Mobile buttons */}
       <div className="flex gap-2 flex-wrap">
         <button
           onClick={() => openFilePicker({ capture: 'environment', multiple: true, onChange: addRawFiles })}
@@ -164,10 +213,7 @@ export default function LocalUploader({ onImported }: { onImported: () => void }
             </span>
             <div className="flex gap-2">
               <button
-                onClick={() => {
-                  files.forEach(f => URL.revokeObjectURL(f.preview))
-                  setFiles([])
-                }}
+                onClick={() => { files.forEach(f => URL.revokeObjectURL(f.preview)); setFiles([]) }}
                 className="text-xs text-gray-600 hover:text-gray-400 px-3 py-1.5 rounded-lg border border-[#2e2e2e] transition-colors"
               >
                 清除全部
@@ -187,12 +233,10 @@ export default function LocalUploader({ onImported }: { onImported: () => void }
               <div key={f.id} className="relative group rounded-lg overflow-hidden bg-[#242424] aspect-square">
                 <img src={f.preview} alt={f.file.name} className="w-full h-full object-cover" />
 
-                {/* Hover / status overlay */}
                 <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${
                   f.status === 'pending'   ? 'bg-black/60 opacity-0 group-hover:opacity-100' :
                   f.status === 'uploading' ? 'bg-black/50 opacity-100' :
-                  f.status === 'error'     ? 'bg-black/70 opacity-100' :
-                  'opacity-0'
+                  f.status === 'error'     ? 'bg-black/70 opacity-100' : 'opacity-0'
                 }`}>
                   {f.status === 'pending' && (
                     <button
@@ -218,14 +262,12 @@ export default function LocalUploader({ onImported }: { onImported: () => void }
                   )}
                 </div>
 
-                {/* Done badge */}
                 {f.status === 'done' && (
                   <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow">
                     <span className="text-white text-[10px] font-bold">✓</span>
                   </div>
                 )}
 
-                {/* Remove button (pending only) */}
                 {f.status === 'pending' && (
                   <button
                     onClick={e => { e.stopPropagation(); removeFile(f.id) }}
