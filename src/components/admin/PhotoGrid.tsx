@@ -155,13 +155,18 @@ export default function PhotoGrid({ refreshKey }: PhotoGridProps) {
       )}
 
       {/* Photo Editor Modal */}
-      {selected && (
-        <PhotoEditor
-          photo={selected}
-          onUpdate={(updated) => { handleUpdate(updated); setSelected(updated) }}
-          onClose={() => setSelected(null)}
-        />
-      )}
+      {selected && (() => {
+        const idx = photos.findIndex(p => p.id === selected.id)
+        return (
+          <PhotoEditor
+            photo={selected}
+            onUpdate={(updated) => { handleUpdate(updated); setSelected(updated) }}
+            onClose={() => setSelected(null)}
+            onPrev={idx > 0 ? () => setSelected(photos[idx - 1]) : undefined}
+            onNext={idx < photos.length - 1 ? () => setSelected(photos[idx + 1]) : undefined}
+          />
+        )
+      })()}
     </div>
   )
 }

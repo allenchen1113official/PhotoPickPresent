@@ -1,6 +1,5 @@
 'use client'
-import { useState, useCallback } from 'react'
-import Image from 'next/image'
+import { useState, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import StarRating from './StarRating'
 import ExifPanel from './ExifPanel'
@@ -12,14 +11,35 @@ interface PhotoEditorProps {
   photo: Photo
   onUpdate: (updated: Photo) => void
   onClose: () => void
+  onPrev?: () => void
+  onNext?: () => void
 }
 
-export default function PhotoEditor({ photo, onUpdate, onClose }: PhotoEditorProps) {
+export default function PhotoEditor({ photo, onUpdate, onClose, onPrev, onNext }: PhotoEditorProps) {
   const [rating, setRating] = useState(photo.rating)
   const [notes, setNotes] = useState(photo.notes || '')
   const [appreciation, setAppreciation] = useState(photo.appreciation || '')
   const [showPublic, setShowPublic] = useState(!!photo.show_public)
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setRating(photo.rating)
+    setNotes(photo.notes || '')
+    setAppreciation(photo.appreciation || '')
+    setShowPublic(!!photo.show_public)
+  }, [photo.id])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'TEXTAREA' || tag === 'INPUT') return
+      if (e.key === 'Escape' || e.key === 'm' || e.key === 'M') onClose()
+      if ((e.key === 'f' || e.key === 'F' || e.key === 'ArrowUp') && onPrev) { e.preventDefault(); onPrev() }
+      if ((e.key === 'n' || e.key === 'N' || e.key === 'ArrowDown') && onNext) { e.preventDefault(); onNext() }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose, onPrev, onNext])
 
   const handleSave = useCallback(async () => {
     setSaving(true)
@@ -45,9 +65,23 @@ export default function PhotoEditor({ photo, onUpdate, onClose }: PhotoEditorPro
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[#2e2e2e]">
-          <h2 className="text-white font-medium truncate">{photo.filename}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl leading-none">×</button>
+        <div className="flex items-center gap-3 px-5 py-3 border-b border-[#2e2e2e]">
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl leading-none flex-shrink-0">×</button>
+          <h2 className="text-white font-medium truncate flex-1 text-sm">{photo.filename}</h2>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={onPrev}
+              disabled={!onPrev}
+              title="上一張 (F / ↑)"
+              className="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-[#2e2e2e] disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-lg"
+            >‹</button>
+            <button
+              onClick={onNext}
+              disabled={!onNext}
+              title="下一張 (N / ↓)"
+              className="w-8 h-8 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-[#2e2e2e] disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-lg"
+            >›</button>
+          </div>
         </div>
 
         <div className="flex flex-1 overflow-hidden">

@@ -35,9 +35,9 @@ export default function PhotoLightbox({ photo, photos, onClose, onNavigate }: Ph
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-      if (e.key === 'ArrowLeft') handlePrev()
-      if (e.key === 'ArrowRight') handleNext()
+      if (e.key === 'Escape' || e.key === 'm' || e.key === 'M') onClose()
+      if (e.key === 'ArrowLeft' || e.key === 'f' || e.key === 'F' || e.key === 'ArrowUp') handlePrev()
+      if (e.key === 'ArrowRight' || e.key === 'n' || e.key === 'N' || e.key === 'ArrowDown') handleNext()
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
@@ -101,9 +101,18 @@ export default function PhotoLightbox({ photo, photos, onClose, onNavigate }: Ph
           >›</button>
         )}
 
-        {/* Counter */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1 rounded-full">
-          {currentIndex + 1} / {photos.length}
+        {/* Counter + keyboard hints */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5">
+          <div className="bg-black/50 text-white text-xs px-3 py-1 rounded-full">
+            {currentIndex + 1} / {photos.length}
+          </div>
+          <div className="bg-black/40 text-gray-400 text-[10px] px-3 py-1 rounded-full flex gap-2">
+            <span>F / ↑ 上一張</span>
+            <span>·</span>
+            <span>N / ↓ 下一張</span>
+            <span>·</span>
+            <span>M 回相簿</span>
+          </div>
         </div>
       </div>
 
