@@ -14,7 +14,7 @@
 │  後台管理（Vercel）   │  前台相簿（GitHub Pages）         │
 │  /admin              │  /gallery                        │
 │  /api/*              │  靜態 HTML（從 photos.json 讀取） │
-│  Google Drive 匯入   │  公開瀏覽、無需登入               │
+│  Google Drive / OneDrive 匯入 │ 公開瀏覽、無需登入       │
 │  SQLite（Turso）      │  自動從 Vercel 定期同步           │
 └──────────────────────┴──────────────────────────────────┘
 
@@ -33,6 +33,7 @@
 - [ ] Vercel 帳號（免費）— https://vercel.com
 - [ ] Turso 帳號（免費）— https://turso.tech
 - [ ] Google Cloud 專案（需建立 OAuth 憑證）
+- [ ] Azure 帳號（選用，連結 OneDrive 才需要）— https://portal.azure.com
 
 ---
 
@@ -85,6 +86,67 @@
    GOOGLE_CLIENT_ID     = xxxxx.apps.googleusercontent.com
    GOOGLE_CLIENT_SECRET = GOCSPX-xxxxx
    ```
+
+---
+
+## STEP 1.5 — 建立 Microsoft Azure AD 憑證（選用，連結 OneDrive）
+
+> 若不需要從 OneDrive 匯入照片，可跳過此步驟；Google Drive 仍可獨立使用。
+
+### 1.5-1. 註冊應用程式
+
+1. 前往 https://portal.azure.com
+2. 搜尋並進入 **「Azure Active Directory」**（或「Microsoft Entra ID」）
+3. 左側選單 → **「應用程式註冊」** → **「新增註冊」**
+4. 填入：
+   - 名稱：`PhotoPickPresent`
+   - 支援的帳戶類型：選 **「任何組織目錄中的帳戶與個人 Microsoft 帳戶」**（讓個人 OneDrive 帳號也能登入）
+   - 重新導向 URI：平台選 **「Web」**，填入：
+     ```
+     http://localhost:3000/api/auth/callback/azure-ad
+     ```
+5. 點「註冊」
+
+### 1.5-2. 新增正式環境的重新導向 URI
+
+1. 進入剛建立的應用程式 → **「驗證」**
+2. 「新增 URI」加入：
+   ```
+   https://你的應用名稱.vercel.app/api/auth/callback/azure-ad
+   ```
+   > ⚠️ Vercel 網址部署後才確定，可先只填 localhost，部署後再回來補上（見 STEP 5-4）
+3. 「隱含授權與混合式流程」保持預設不勾選 → 儲存
+
+### 1.5-3. 設定 API 權限
+
+1. 左側選單 → **「API 權限」** → **「新增權限」**
+2. 選 **「Microsoft Graph」** → **「委派的權限」**
+3. 勾選：
+   - `openid`、`email`、`profile`（通常預設已有）
+   - `User.Read`
+   - `Files.Read`
+4. 點「新增權限」（個人帳戶通常不需要管理員同意）
+
+### 1.5-4. 建立用戶端密碼
+
+1. 左側選單 → **「憑證及秘密」** → **「用戶端密碼」** → **「新增用戶端密碼」**
+2. 說明：`PhotoPickPresent Secret`，到期日選擇你方便的期限（例如 24 個月）
+3. 點「新增」後，**立即複製「值」**（離開頁面後就看不到了）
+
+### 1.5-5. 記下需要的值
+
+1. 應用程式總覽頁可看到：
+   - **應用程式 (用戶端) 識別碼** → 即 `AZURE_AD_CLIENT_ID`
+2. 剛複製的用戶端密碼「值」 → 即 `AZURE_AD_CLIENT_SECRET`
+
+**📋 記下以下三個值：**
+```
+AZURE_AD_CLIENT_ID     = xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+AZURE_AD_CLIENT_SECRET = xxx~xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+AZURE_AD_TENANT_ID     = common   （固定填 common，支援個人 Microsoft 帳號）
+```
+
+> ⚠️ **OneDrive 縮圖連結限制**：Microsoft Graph 回傳的縮圖／下載連結有效期限只有數小時，匯入後若公開相簿圖片過一段時間失效，需重新匯入以更新 URL。若要長期穩定的公開相簿，建議優先使用 Google Drive 作為照片來源，OneDrive 適合作為輔助 / 暫時的匯入管道。
 
 ---
 
@@ -146,6 +208,11 @@ NEXTAUTH_SECRET=（執行 openssl rand -base64 32 取得）
 GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-xxxxx
 
+# Microsoft / OneDrive OAuth（選用，STEP 1.5 取得）
+AZURE_AD_CLIENT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+AZURE_AD_CLIENT_SECRET=xxx~xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+AZURE_AD_TENANT_ID=common
+
 # Turso 資料庫（本機可留空，自動使用本地 SQLite）
 TURSO_DATABASE_URL=libsql://photopickpresent-xxxxx.turso.io
 TURSO_AUTH_TOKEN=eyJhbGci...
@@ -183,7 +250,7 @@ Vercel 自動偵測 Next.js，確認以下設定（通常不需更動）：
 
 ### 4-3. 填入環境變數 ⭐ 最重要的步驟
 
-展開「**Environment Variables**」，逐一新增以下 6 個變數：
+展開「**Environment Variables**」，逐一新增以下變數（前 6 個為必填，後 3 個為 OneDrive 選用）：
 
 | 變數名稱 | 範例值 | 說明 |
 |---------|--------|------|
@@ -193,6 +260,9 @@ Vercel 自動偵測 Next.js，確認以下設定（通常不需更動）：
 | `GOOGLE_CLIENT_SECRET` | `GOCSPX-xxxxx` | STEP 1-4 取得 |
 | `TURSO_DATABASE_URL` | `libsql://photopickpresent-xxx.turso.io` | STEP 2 取得 |
 | `TURSO_AUTH_TOKEN` | `eyJhbGci...` | STEP 2 取得 |
+| `AZURE_AD_CLIENT_ID`（選用） | `xxxxxxxx-xxxx-...` | STEP 1.5 取得，未填則後台不顯示 OneDrive 登入 |
+| `AZURE_AD_CLIENT_SECRET`（選用） | `xxx~xxxx...` | STEP 1.5 取得 |
+| `AZURE_AD_TENANT_ID`（選用） | `common` | STEP 1.5 取得，固定填 `common` |
 
 > 提示：`NEXTAUTH_URL` 第一次先隨意填，部署完取得正式網址後再更新。
 
@@ -237,6 +307,17 @@ https://photopickpresent-allenchen.vercel.app
 
 點「儲存」。
 
+### 5-4. 更新 Azure AD 回呼 URI（若使用 OneDrive）
+
+回到 **Azure Portal → 應用程式註冊 → 你的應用程式 → 驗證**：
+
+在「重新導向 URI」**新增**：
+```
+https://photopickpresent-allenchen.vercel.app/api/auth/callback/azure-ad
+```
+
+點「儲存」。
+
 ---
 
 ## STEP 6 — 設定 GitHub Actions Secrets（GitHub Pages 自動部署）
@@ -253,6 +334,8 @@ GitHub Pages 部署需要連接 Turso 資料庫，請在 GitHub 設定以下 Sec
 | `NEXTAUTH_SECRET` | 與 Vercel 相同的 secret |
 | `GOOGLE_CLIENT_ID` | Google OAuth Client ID |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth Secret |
+
+> GitHub Pages 只展示已標記「公開顯示」的照片（靜態匯出），不需要連線 OneDrive，因此不需要設定 `AZURE_AD_*` Secrets。
 
 3. 前往 `https://github.com/allenchen1113official/PhotoPickPresent/settings/pages`
 4. Source 選「**Deploy from a branch**」，Branch 選「**gh-pages**」，路徑選「**/ (root)**」
@@ -273,6 +356,8 @@ GitHub Pages 部署需要連接 Turso 資料庫，請在 GitHub 設定以下 Sec
 | 後台管理 | `https://your-app.vercel.app/admin` | 顯示管理介面 |
 | Google 登入 | 後台點「Google 登入」 | 成功登入，無錯誤 |
 | Drive 匯入 | 後台「匯入照片」分頁 | 看到 Google Drive 檔案列表 |
+| OneDrive 登入（選用） | 後台點「Microsoft 登入」 | 成功登入，無錯誤 |
+| OneDrive 匯入（選用） | 後台「匯入照片」分頁切換到 OneDrive | 看到 OneDrive 檔案列表 |
 | 資料庫連線 | 匯入一張照片 | 照片出現在「照片管理」中 |
 | GitHub Pages | `https://allenchen1113official.github.io/PhotoPickPresent/gallery/` | 顯示靜態相簿 |
 
@@ -357,6 +442,18 @@ git push
 **原因：** 程式碼錯誤或環境變數缺漏  
 **解決：** 點「View Build Logs」查看詳細錯誤，或本機先執行 `npm run build` 確認
 
+### ❌ 後台沒有出現「Microsoft 登入」按鈕
+**原因：** `AZURE_AD_CLIENT_ID` / `AZURE_AD_CLIENT_SECRET` 未設定（程式只在偵測到這兩個環境變數時才會啟用 OneDrive 登入）  
+**解決：** 依照 STEP 1.5 建立憑證，並在 Vercel 環境變數補上後 Redeploy
+
+### ❌ Microsoft 登入出現「redirect_uri_mismatch」或「AADSTS50011」
+**原因：** Azure AD 應用程式的「重新導向 URI」未包含目前網址  
+**解決：** Azure Portal → 應用程式註冊 → 驗證 → 確認包含 `https://你的網址/api/auth/callback/azure-ad`（見 STEP 5-4）
+
+### ❌ OneDrive 照片匯入後過一段時間顯示空白
+**原因：** Microsoft Graph 縮圖／下載連結為短效期（數小時），逾期即失效  
+**解決：** 重新匯入該照片以取得新連結；長期公開使用建議改用 Google Drive 來源
+
 ---
 
-*SOP 版本：2.0 | 更新日期：2026-05-06*
+*SOP 版本：2.1 | 更新日期：2026-06-16*
