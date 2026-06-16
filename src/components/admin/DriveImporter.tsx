@@ -26,6 +26,7 @@ export default function DriveImporter({ onImported }: DriveImporterProps) {
   const [loading, setLoading] = useState(false)
   const [importing, setImporting] = useState<Set<string>>(new Set())
   const [importingAll, setImportingAll] = useState(false)
+  const [error, setError] = useState('')
 
   const hasGoogle = !!session?.googleAccessToken
   const hasMicrosoft = !!session?.microsoftAccessToken
@@ -43,16 +44,20 @@ export default function DriveImporter({ onImported }: DriveImporterProps) {
   }, [provider, hasGoogle, hasMicrosoft])
 
   async function loadFolders() {
+    setError('')
     const endpoint = provider === 'google' ? '/api/drive/folders' : '/api/onedrive/folders'
     const res = await fetch(endpoint)
+    const data = await res.json()
     if (res.ok) {
-      const data = await res.json()
       setFolders(data.folders || [])
+    } else {
+      setError(data.error || `載入資料夾失敗（HTTP ${res.status}）`)
     }
   }
 
   async function loadFiles(folderId?: string, pageToken?: string) {
     setLoading(true)
+    setError('')
     try {
       const params = new URLSearchParams()
       if (folderId) params.set('folderId', folderId)
@@ -60,6 +65,10 @@ export default function DriveImporter({ onImported }: DriveImporterProps) {
       const endpoint = provider === 'google' ? '/api/drive/files' : '/api/onedrive/files'
       const res = await fetch(`${endpoint}?${params}`)
       const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || `載入失敗（HTTP ${res.status}）`)
+        return
+      }
       const newFiles: FileWithStatus[] = (data.files || []).map((f: any) => ({
         ...f,
         imported: f.imported ?? false,
@@ -70,6 +79,8 @@ export default function DriveImporter({ onImported }: DriveImporterProps) {
       if (pageToken) setFiles(prev => [...prev, ...newFiles])
       else setFiles(newFiles)
       setNextPageToken(data.nextPageToken || data.nextLink || '')
+    } catch (e: any) {
+      setError(e.message || '網路錯誤')
     } finally {
       setLoading(false)
     }
@@ -244,6 +255,19 @@ export default function DriveImporter({ onImported }: DriveImporterProps) {
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="white"><path d="M11.55 3.04A8.22 8.22 0 0 1 19.78 9.5a5.99 5.99 0 0 1 4.22 5.75A6 6 0 0 1 18 21H6a6 6 0 0 1-.33-11.97 8.22 8.22 0 0 1 5.88-5.99z"/></svg>
             連結 Microsoft / OneDrive
           </button>
+        </div>
+      )}
+
+      {/* Error display */}
+      {error && (
+        <div className="rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-400">
+          <p className="font-medium mb-0.5">載入失敗</p>
+          <p className="text-xs text-red-300/80 break-all">{error}</p>
+          {error.includes('drive') || error.includes('Drive') || error.includes('403') ? (
+            <p className="text-xs text-gray-400 mt-2">
+              請確認 Google Cloud Console 已啟用 <strong>Google Drive API</strong>，並重新以 Google 帳號登入授權。
+            </p>
+          ) : null}
         </div>
       )}
 
