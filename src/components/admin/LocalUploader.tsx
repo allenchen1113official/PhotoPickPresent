@@ -42,14 +42,74 @@ async function extractExif(file: File): Promise<Record<string, unknown>> {
   }
 }
 
+const MAX_UPLOAD_BYTES = 9.5 * 1024 * 1024
+
+// 將過大的圖片於前端縮小/壓縮，避免超過 Cloudinary unsigned preset 的大小限制，
+// 也能避免行動裝置上傳大檔時 fetch 因記憶體/網路不穩而失敗（顯示為 "Load failed"）。
+async function compressImage(file: File, maxBytes: number): Promise<File> {
+  if (file.size <= maxBytes) return file
+
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('讀取圖片失敗'))
+    reader.readAsDataURL(file)
+  })
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image()
+    el.onload = () => resolve(el)
+    el.onerror = () => reject(new Error('圖片解碼失敗'))
+    el.src = dataUrl
+  })
+
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return file
+
+  let { width, height } = img
+  let quality = 0.9
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    canvas.width = width
+    canvas.height = height
+    ctx.clearRect(0, 0, width, height)
+    ctx.drawImage(img, 0, 0, width, height)
+
+    const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality))
+    if (!blob) break
+
+    if (blob.size <= maxBytes) {
+      return new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' })
+    }
+
+    // 先降低畫質，畫質已經很低時改縮小尺寸
+    if (quality > 0.5) {
+      quality -= 0.15
+    } else {
+      width = Math.round(width * 0.75)
+      height = Math.round(height * 0.75)
+    }
+  }
+
+  // 退無可退，回傳最後一次嘗試的結果（即便仍超過上限，至少比原檔小）
+  const finalBlob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.5))
+  return finalBlob ? new File([finalBlob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }) : file
+}
+
 async function uploadToCloudinary(file: File): Promise<{ url: string; publicId: string }> {
   const form = new FormData()
   form.append('file', file)
   form.append('upload_preset', UPLOAD_PRESET)
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-    method: 'POST',
-    body: form,
-  })
+  let res: Response
+  try {
+    res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+      method: 'POST',
+      body: form,
+    })
+  } catch {
+    throw new Error('網路連線中斷或檔案過大，請檢查網路後重試')
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     throw new Error(err?.error?.message || `Cloudinary 上傳失敗（HTTP ${res.status}）`)
@@ -114,10 +174,11 @@ export default function LocalUploader({ onImported }: { onImported: () => void }
   async function uploadOne(localFile: LocalFile) {
     setFiles(prev => prev.map(f => f.id === localFile.id ? { ...f, status: 'uploading', error: undefined } : f))
     try {
-      const [exif, { url, publicId }] = await Promise.all([
+      const [exif, uploadFile] = await Promise.all([
         extractExif(localFile.file),
-        uploadToCloudinary(localFile.file),
+        compressImage(localFile.file, MAX_UPLOAD_BYTES),
       ])
+      const { url, publicId } = await uploadToCloudinary(uploadFile)
 
       const res = await fetch('/api/photos', {
         method: 'POST',
