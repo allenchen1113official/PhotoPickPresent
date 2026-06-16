@@ -16,6 +16,8 @@ export default function PhotoLightbox({ photo, photos, onClose, onNavigate }: Ph
   const [liked, setLiked] = useState(false)
   const [likePending, setLikePending] = useState(false)
   const [showInfo, setShowInfo] = useState(true)
+  const [showShareMenu, setShowShareMenu] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const currentIndex = photos.findIndex((p) => p.id === photo.id)
 
@@ -56,14 +58,37 @@ export default function PhotoLightbox({ photo, photos, onClose, onNavigate }: Ph
     }
   }
 
-  async function handleShare() {
-    const url = `${window.location.origin}/gallery?photo=${photo.id}`
-    if (navigator.share) {
-      await navigator.share({ title: photo.filename, url })
-    } else {
-      await navigator.clipboard.writeText(url)
-      alert('連結已複製！')
-    }
+  const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/gallery?photo=${photo.id}`
+
+  async function copyShareLink() {
+    await navigator.clipboard.writeText(shareUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  function shareToFacebook() {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank', 'noopener,noreferrer')
+  }
+
+  function shareToLine() {
+    window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}`, '_blank', 'noopener,noreferrer')
+  }
+
+  function shareToThreads() {
+    const text = `${photo.filename}\n${shareUrl}`
+    window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer')
+  }
+
+  async function shareToInstagram() {
+    // Instagram 不支援以連結預填貼文，因此先複製連結，再開啟 Instagram 供使用者貼上。
+    await navigator.clipboard.writeText(shareUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+    window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer')
+  }
+
+  function handleShare() {
+    setShowShareMenu((v) => !v)
   }
 
   const takenAt = photo.taken_at
@@ -202,14 +227,68 @@ export default function PhotoLightbox({ photo, photos, onClose, onNavigate }: Ph
               <span className="text-base">{liked ? '❤️' : '🤍'}</span>
               <span>{likes} 讚</span>
             </button>
-            <button
-              onClick={handleShare}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#1a1a1a] border border-[#2e2e2e] hover:border-amber-500/40 hover:text-amber-400 text-gray-400 rounded-xl font-medium text-sm transition-all"
-            >
-              <span>🔗</span>
-              <span>分享</span>
-            </button>
+            <div className="relative flex-1">
+              <button
+                onClick={handleShare}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#1a1a1a] border border-[#2e2e2e] hover:border-amber-500/40 hover:text-amber-400 text-gray-400 rounded-xl font-medium text-sm transition-all"
+              >
+                <span>🔗</span>
+                <span>分享</span>
+              </button>
+
+              {showShareMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowShareMenu(false)} />
+                  <div className="absolute z-20 bottom-full mb-2 right-0 w-48 bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl shadow-2xl p-2 space-y-1">
+                    <button
+                      onClick={() => { shareToFacebook(); setShowShareMenu(false) }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-200 hover:bg-[#2a2a2a] transition-colors"
+                    >
+                      <span className="text-base">📘</span>
+                      <span>Facebook</span>
+                    </button>
+                    <button
+                      onClick={() => { shareToInstagram(); setShowShareMenu(false) }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-200 hover:bg-[#2a2a2a] transition-colors"
+                    >
+                      <span className="text-base">📸</span>
+                      <span>Instagram</span>
+                    </button>
+                    <button
+                      onClick={() => { shareToLine(); setShowShareMenu(false) }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-200 hover:bg-[#2a2a2a] transition-colors"
+                    >
+                      <span className="text-base">💬</span>
+                      <span>LINE</span>
+                    </button>
+                    <button
+                      onClick={() => { shareToThreads(); setShowShareMenu(false) }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-200 hover:bg-[#2a2a2a] transition-colors"
+                    >
+                      <span className="text-base">🧵</span>
+                      <span>Threads</span>
+                    </button>
+                    <div className="border-t border-[#2e2e2e] my-1" />
+                    <button
+                      onClick={() => { copyShareLink(); setShowShareMenu(false) }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-200 hover:bg-[#2a2a2a] transition-colors"
+                    >
+                      <span className="text-base">🔗</span>
+                      <span>複製連結</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* Copied toast */}
+      {copied && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-green-500/90 text-black text-sm font-medium px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-30">
+          <span>✓</span>
+          <span>連結已複製</span>
         </div>
       )}
 
