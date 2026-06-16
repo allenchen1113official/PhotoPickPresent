@@ -1,0 +1,7 @@
+User-Agent: *
+Allow: /gallery
+Disallow: /admin
+Disallow: /api/
+
+Host: https://allenchen1113official.github.io/PhotoPickPresent
+Sitemap: https://allenchen1113official.github.io/PhotoPickPresent/sitemap.xml
