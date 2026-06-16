@@ -113,7 +113,19 @@ export default function PhotoGrid({ refreshKey }: PhotoGridProps) {
 
               {/* Bottom info */}
               <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-full group-hover:translate-y-0 transition-transform">
-                <p className="text-white text-xs truncate mb-1">{photo.filename}</p>
+                <p className="text-white text-xs truncate mb-0.5">{photo.filename}</p>
+                {(photo.camera_make || photo.camera_model) && (
+                  <p className="text-gray-400 text-[10px] truncate mb-0.5">
+                    {[photo.camera_make, photo.camera_model].filter(Boolean).join(' ')}
+                  </p>
+                )}
+                {(photo.aperture || photo.shutter_speed || photo.iso) && (
+                  <p className="text-amber-400 text-[10px] font-mono flex gap-1.5 flex-wrap mb-0.5">
+                    {photo.aperture && <span>f/{photo.aperture.toFixed(1)}</span>}
+                    {photo.shutter_speed && <span>{photo.shutter_speed}</span>}
+                    {photo.iso && <span>ISO {photo.iso}</span>}
+                  </p>
+                )}
                 {photo.rating > 0 && (
                   <div className="flex gap-0.5">
                     {Array.from({ length: photo.rating }).map((_, i) => (

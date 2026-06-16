@@ -88,6 +88,13 @@ export default function PhotoCard({ photo, onClick }: PhotoCardProps) {
                 {[photo.camera_make, photo.camera_model].filter(Boolean).join(' ')}
               </p>
             )}
+            {(photo.aperture || photo.shutter_speed || photo.iso) && (
+              <p className="text-gray-600 text-xs font-mono mt-0.5 flex gap-2 flex-wrap">
+                {photo.aperture && <span>f/{photo.aperture.toFixed(1)}</span>}
+                {photo.shutter_speed && <span>{photo.shutter_speed}</span>}
+                {photo.iso && <span>ISO {photo.iso}</span>}
+              </p>
+            )}
           </div>
         </div>
 
