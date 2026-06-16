@@ -21,6 +21,7 @@ export default function PhotoEditor({ photo, onUpdate, onClose, onPrev, onNext }
   const [appreciation, setAppreciation] = useState(photo.appreciation || '')
   const [showPublic, setShowPublic] = useState(!!photo.show_public)
   const [saving, setSaving] = useState(false)
+  const [savedToast, setSavedToast] = useState(false)
 
   useEffect(() => {
     setRating(photo.rating)
@@ -51,6 +52,8 @@ export default function PhotoEditor({ photo, onUpdate, onClose, onPrev, onNext }
       })
       const updated = await res.json()
       onUpdate(updated)
+      setSavedToast(true)
+      setTimeout(() => setSavedToast(false), 2000)
     } finally {
       setSaving(false)
     }
@@ -61,7 +64,7 @@ export default function PhotoEditor({ photo, onUpdate, onClose, onPrev, onNext }
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-[#1a1a1a] rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col"
+        className="relative bg-[#1a1a1a] rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -162,6 +165,14 @@ export default function PhotoEditor({ photo, onUpdate, onClose, onPrev, onNext }
             </button>
           </div>
         </div>
+
+        {/* Saved toast */}
+        {savedToast && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-green-500/90 text-black text-sm font-medium px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+            <span>✓</span>
+            <span>已儲存</span>
+          </div>
+        )}
       </div>
     </div>
   )
