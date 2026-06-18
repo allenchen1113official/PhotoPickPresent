@@ -99,14 +99,14 @@ export default function PhotoLightbox({ photo, photos, onClose, onNavigate }: Ph
     : null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 flex" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/95 flex flex-col sm:flex-row" onClick={onClose}>
       {/* Image area */}
-      <div className="flex-1 flex items-center justify-center relative min-w-0" onClick={onClose}>
+      <div className={`flex-1 min-h-0 flex items-center justify-center relative min-w-0 ${showInfo ? 'max-h-[55vh] sm:max-h-none' : ''}`} onClick={onClose}>
         {/* Prev */}
         {currentIndex > 0 && (
           <button
             onClick={(e) => { e.stopPropagation(); handlePrev() }}
-            className="absolute left-4 z-10 w-12 h-12 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-xl transition-colors"
+            className="absolute left-2 sm:left-4 z-10 w-10 h-10 sm:w-12 sm:h-12 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-xl transition-colors"
           >‹</button>
         )}
 
@@ -114,7 +114,6 @@ export default function PhotoLightbox({ photo, photos, onClose, onNavigate }: Ph
           src={photo.full_url || photo.thumbnail_url || ''}
           alt={photo.filename}
           className="max-w-full max-h-full object-contain"
-          style={{ maxHeight: '100vh', maxWidth: showInfo ? 'calc(100vw - 360px)' : '100vw' }}
           onClick={(e) => e.stopPropagation()}
         />
 
@@ -122,7 +121,7 @@ export default function PhotoLightbox({ photo, photos, onClose, onNavigate }: Ph
         {currentIndex < photos.length - 1 && (
           <button
             onClick={(e) => { e.stopPropagation(); handleNext() }}
-            className="absolute right-4 z-10 w-12 h-12 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-xl transition-colors"
+            className="absolute right-2 sm:right-4 z-10 w-10 h-10 sm:w-12 sm:h-12 bg-black/50 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-xl transition-colors"
           >›</button>
         )}
 
@@ -131,7 +130,7 @@ export default function PhotoLightbox({ photo, photos, onClose, onNavigate }: Ph
           <div className="bg-black/50 text-white text-xs px-3 py-1 rounded-full">
             {currentIndex + 1} / {photos.length}
           </div>
-          <div className="bg-black/40 text-gray-400 text-[10px] px-3 py-1 rounded-full flex gap-2">
+          <div className="hidden sm:flex bg-black/40 text-gray-400 text-[10px] px-3 py-1 rounded-full gap-2">
             <span>F / ↑ 上一張</span>
             <span>·</span>
             <span>N / ↓ 下一張</span>
@@ -144,7 +143,7 @@ export default function PhotoLightbox({ photo, photos, onClose, onNavigate }: Ph
       {/* Info Panel */}
       {showInfo && (
         <div
-          className="w-[360px] bg-[#111] border-l border-[#2a2a2a] flex flex-col overflow-hidden"
+          className="w-full sm:w-[360px] max-h-[45vh] sm:max-h-none flex-shrink-0 bg-[#111] border-t sm:border-t-0 sm:border-l border-[#2a2a2a] flex flex-col overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

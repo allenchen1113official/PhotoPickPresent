@@ -107,25 +107,25 @@ export default function GalleryPage() {
     <div className="min-h-screen bg-[#0f0f0f] text-gray-100">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-[#0f0f0f]/90 backdrop-blur border-b border-[#2e2e2e]">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-amber-500 text-2xl">📷</span>
+            <span className="text-amber-500 text-xl sm:text-2xl">📷</span>
             <div>
-              <h1 className="text-white font-bold text-lg leading-tight">攝影作品集</h1>
-              <p className="text-gray-500 text-xs">Photography Gallery</p>
+              <h1 className="text-white font-bold text-base sm:text-lg leading-tight">攝影作品集</h1>
+              <p className="text-gray-500 text-[10px] sm:text-xs">Photography Gallery</p>
             </div>
           </div>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="w-full sm:w-auto sm:ml-auto flex items-center gap-2 sm:gap-3 order-last sm:order-none">
             <select
               value={sort}
               onChange={(e) => { setSort(e.target.value); setPage(1) }}
-              className="bg-[#1a1a1a] border border-[#2e2e2e] text-gray-300 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-amber-500"
+              className="flex-1 sm:flex-initial bg-[#1a1a1a] border border-[#2e2e2e] text-gray-300 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-amber-500"
             >
               <option value="taken_at_desc">最新拍攝</option>
               <option value="taken_at_asc">最早拍攝</option>
               <option value="likes_desc">最多讚</option>
             </select>
-            <span className="text-gray-600 text-sm">{total} 張</span>
+            <span className="text-gray-600 text-sm whitespace-nowrap">{total} 張</span>
             <a
               href={`${BASE_PATH}/admin`}
               className="text-gray-700 hover:text-gray-400 text-xs transition-colors"
@@ -138,9 +138,9 @@ export default function GalleryPage() {
       </header>
 
       {/* Gallery Grid */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {loading && photos.length === 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
             {Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="rounded-xl bg-[#1a1a1a] overflow-hidden animate-pulse">
                 <div className="aspect-[4/3] bg-[#242424]" />
@@ -157,7 +157,7 @@ export default function GalleryPage() {
             <p className="text-lg">目前沒有公開的作品</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
             {photos.map((photo) => (
               <PhotoCard key={photo.id} photo={photo} onClick={() => openLightbox(photo)} />
             ))}

@@ -51,8 +51,8 @@ export default function PhotoGrid({ refreshKey }: PhotoGridProps) {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex gap-3 flex-wrap items-center">
-        <div className="flex gap-1 items-center">
+      <div className="flex gap-2 sm:gap-3 flex-wrap items-center">
+        <div className="flex gap-1 items-center flex-wrap">
           <span className="text-xs text-gray-400 mr-1">篩選：</span>
           <button
             onClick={() => { setFilterRating(0) }}
@@ -83,7 +83,7 @@ export default function PhotoGrid({ refreshKey }: PhotoGridProps) {
 
       {/* Grid */}
       {loading && photos.length === 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
           {Array.from({ length: 10 }).map((_, i) => (
             <div key={i} className="aspect-square bg-[#242424] rounded-lg animate-pulse" />
           ))}
@@ -94,7 +94,7 @@ export default function PhotoGrid({ refreshKey }: PhotoGridProps) {
           <p>尚未匯入任何照片</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
           {photos.map((photo) => (
             <div
               key={photo.id}
@@ -108,11 +108,11 @@ export default function PhotoGrid({ refreshKey }: PhotoGridProps) {
                 <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">無預覽</div>
               )}
 
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              {/* Overlay — always visible on touch screens, hover-gated on pointer devices */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" />
 
               {/* Bottom info */}
-              <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-full group-hover:translate-y-0 transition-transform">
+              <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-0 md:translate-y-full md:group-hover:translate-y-0 transition-transform">
                 <p className="text-white text-xs truncate mb-0.5">{photo.filename}</p>
                 {(photo.camera_make || photo.camera_model) && (
                   <p className="text-gray-400 text-[10px] truncate mb-0.5">
@@ -145,10 +145,10 @@ export default function PhotoGrid({ refreshKey }: PhotoGridProps) {
                 )}
               </div>
 
-              {/* Delete button */}
+              {/* Delete button — always tappable on touch screens */}
               <button
                 onClick={(e) => { e.stopPropagation(); handleDelete(photo.id) }}
-                className="absolute top-1.5 left-1.5 w-6 h-6 bg-red-600/80 hover:bg-red-600 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                className="absolute top-1.5 left-1.5 w-6 h-6 bg-red-600/80 hover:bg-red-600 text-white text-xs rounded opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center"
               >×</button>
             </div>
           ))}

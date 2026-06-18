@@ -295,7 +295,7 @@ export default function LocalUploader({ onImported }: { onImported: () => void }
                 <img src={f.preview} alt={f.file.name} className="w-full h-full object-cover" />
 
                 <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${
-                  f.status === 'pending'   ? 'bg-black/60 opacity-0 group-hover:opacity-100' :
+                  f.status === 'pending'   ? 'bg-black/60 opacity-100 md:opacity-0 md:group-hover:opacity-100' :
                   f.status === 'uploading' ? 'bg-black/50 opacity-100' :
                   f.status === 'error'     ? 'bg-black/70 opacity-100' : 'opacity-0'
                 }`}>
@@ -332,7 +332,7 @@ export default function LocalUploader({ onImported }: { onImported: () => void }
                 {f.status === 'pending' && (
                   <button
                     onClick={e => { e.stopPropagation(); removeFile(f.id) }}
-                    className="absolute top-1.5 left-1.5 w-5 h-5 bg-black/60 rounded-full hidden group-hover:flex items-center justify-center text-white text-xs hover:bg-red-600 transition-colors"
+                    className="absolute top-1.5 left-1.5 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center text-white text-xs hover:bg-red-600 transition-colors"
                   >
                     ×
                   </button>
