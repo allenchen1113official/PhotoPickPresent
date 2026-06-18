@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 function checkVar(name: string, validator?: (v: string) => boolean): object {
   const val = process.env[name]
@@ -14,6 +16,11 @@ function checkVar(name: string, validator?: (v: string) => boolean): object {
 }
 
 export async function GET() {
+  const session = await getServerSession(authOptions)
+  if (!session?.accessToken) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const result = {
     NEXTAUTH_URL: checkVar('NEXTAUTH_URL', v => v.startsWith('https://')),
     NEXTAUTH_SECRET: checkVar('NEXTAUTH_SECRET', v => v.length >= 20),
