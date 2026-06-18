@@ -16,6 +16,7 @@ export default function PhotoGrid({ refreshKey }: PhotoGridProps) {
   const [selected, setSelected] = useState<Photo | null>(null)
   const [filterRating, setFilterRating] = useState(0)
   const [sort, setSort] = useState('taken_at_desc')
+  const selectedIdx = selected ? photos.findIndex((p) => p.id === selected.id) : -1
 
   const fetchPhotos = useCallback(async (p = 1) => {
     setLoading(true)
@@ -109,10 +110,10 @@ export default function PhotoGrid({ refreshKey }: PhotoGridProps) {
               )}
 
               {/* Overlay — always visible on touch screens, hover-gated on pointer devices */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent touch-reveal transition-opacity" />
 
               {/* Bottom info */}
-              <div className="absolute bottom-0 left-0 right-0 p-2 translate-y-0 md:translate-y-full md:group-hover:translate-y-0 transition-transform">
+              <div className="absolute bottom-0 left-0 right-0 p-2 touch-reveal-slide transition-transform">
                 <p className="text-white text-xs truncate mb-0.5">{photo.filename}</p>
                 {(photo.camera_make || photo.camera_model) && (
                   <p className="text-gray-400 text-[10px] truncate mb-0.5">
@@ -148,7 +149,7 @@ export default function PhotoGrid({ refreshKey }: PhotoGridProps) {
               {/* Delete button — always tappable on touch screens */}
               <button
                 onClick={(e) => { e.stopPropagation(); handleDelete(photo.id) }}
-                className="absolute top-1.5 left-1.5 w-6 h-6 bg-red-600/80 hover:bg-red-600 text-white text-xs rounded opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                className="absolute top-1.5 left-1.5 w-6 h-6 bg-red-600/80 hover:bg-red-600 text-white text-xs rounded touch-reveal transition-opacity flex items-center justify-center"
               >×</button>
             </div>
           ))}
@@ -167,18 +168,15 @@ export default function PhotoGrid({ refreshKey }: PhotoGridProps) {
       )}
 
       {/* Photo Editor Modal */}
-      {selected && (() => {
-        const idx = photos.findIndex(p => p.id === selected.id)
-        return (
-          <PhotoEditor
-            photo={selected}
-            onUpdate={(updated) => { handleUpdate(updated); setSelected(updated) }}
-            onClose={() => setSelected(null)}
-            onPrev={idx > 0 ? () => setSelected(photos[idx - 1]) : undefined}
-            onNext={idx >= 0 && idx < photos.length - 1 ? () => setSelected(photos[idx + 1]) : undefined}
-          />
-        )
-      })()}
+      {selected && (
+        <PhotoEditor
+          photo={selected}
+          onUpdate={(updated) => { handleUpdate(updated); setSelected(updated) }}
+          onClose={() => setSelected(null)}
+          onPrev={selectedIdx > 0 ? () => setSelected(photos[selectedIdx - 1]) : undefined}
+          onNext={selectedIdx >= 0 && selectedIdx < photos.length - 1 ? () => setSelected(photos[selectedIdx + 1]) : undefined}
+        />
+      )}
     </div>
   )
 }

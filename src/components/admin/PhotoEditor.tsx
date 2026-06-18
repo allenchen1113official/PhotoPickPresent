@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import StarRating from './StarRating'
 import ExifPanel from './ExifPanel'
+import { useTimedFlag } from '@/hooks/useTimedFlag'
 import type { Photo } from '@/types'
 
 const Histogram = dynamic(() => import('./Histogram'), { ssr: false })
@@ -21,7 +22,7 @@ export default function PhotoEditor({ photo, onUpdate, onClose, onPrev, onNext }
   const [appreciation, setAppreciation] = useState(photo.appreciation || '')
   const [showPublic, setShowPublic] = useState(!!photo.show_public)
   const [saving, setSaving] = useState(false)
-  const [savedToast, setSavedToast] = useState(false)
+  const [savedToast, triggerSavedToast] = useTimedFlag(2000)
 
   useEffect(() => {
     setRating(photo.rating)
@@ -52,12 +53,11 @@ export default function PhotoEditor({ photo, onUpdate, onClose, onPrev, onNext }
       })
       const updated = await res.json()
       onUpdate(updated)
-      setSavedToast(true)
-      setTimeout(() => setSavedToast(false), 2000)
+      triggerSavedToast()
     } finally {
       setSaving(false)
     }
-  }, [photo.id, rating, notes, appreciation, showPublic, onUpdate])
+  }, [photo.id, rating, notes, appreciation, showPublic, onUpdate, triggerSavedToast])
 
   const imageUrl = photo.thumbnail_url || photo.full_url || ''
 

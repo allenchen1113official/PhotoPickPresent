@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import { useTimedFlag } from '@/hooks/useTimedFlag'
 import type { Photo } from '@/types'
 
 const IS_STATIC = process.env.NEXT_PUBLIC_STATIC_MODE === 'true'
@@ -17,7 +18,7 @@ export default function PhotoLightbox({ photo, photos, onClose, onNavigate }: Ph
   const [likePending, setLikePending] = useState(false)
   const [showInfo, setShowInfo] = useState(true)
   const [showShareMenu, setShowShareMenu] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copied, triggerCopied] = useTimedFlag(2000)
 
   const currentIndex = photos.findIndex((p) => p.id === photo.id)
 
@@ -62,30 +63,36 @@ export default function PhotoLightbox({ photo, photos, onClose, onNavigate }: Ph
 
   async function copyShareLink() {
     await navigator.clipboard.writeText(shareUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    triggerCopied()
   }
 
-  function shareToFacebook() {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank', 'noopener,noreferrer')
-  }
-
-  function shareToLine() {
-    window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}`, '_blank', 'noopener,noreferrer')
-  }
-
-  function shareToThreads() {
-    const text = `${photo.filename}\n${shareUrl}`
-    window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer')
-  }
-
-  async function shareToInstagram() {
-    // Instagram 不支援以連結預填貼文，因此先複製連結，再開啟 Instagram 供使用者貼上。
-    await navigator.clipboard.writeText(shareUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-    window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer')
-  }
+  const SHARE_TARGETS: { id: string; label: string; icon: string; action: () => void | Promise<void> }[] = [
+    {
+      id: 'facebook',
+      label: 'Facebook',
+      icon: '📘',
+      action: () => { window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank', 'noopener,noreferrer') },
+    },
+    {
+      id: 'instagram',
+      label: 'Instagram',
+      icon: '📸',
+      // Instagram 不支援以連結預填貼文，因此先複製連結，再開啟 Instagram 供使用者貼上。
+      action: async () => { await copyShareLink(); window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer') },
+    },
+    {
+      id: 'line',
+      label: 'LINE',
+      icon: '💬',
+      action: () => { window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareUrl)}`, '_blank', 'noopener,noreferrer') },
+    },
+    {
+      id: 'threads',
+      label: 'Threads',
+      icon: '🧵',
+      action: () => { window.open(`https://www.threads.net/intent/post?text=${encodeURIComponent(`${photo.filename}\n${shareUrl}`)}`, '_blank', 'noopener,noreferrer') },
+    },
+  ]
 
   function handleShare() {
     setShowShareMenu((v) => !v)
@@ -239,34 +246,16 @@ export default function PhotoLightbox({ photo, photos, onClose, onNavigate }: Ph
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowShareMenu(false)} />
                   <div className="absolute z-20 bottom-full mb-2 right-0 w-48 bg-[#1a1a1a] border border-[#2e2e2e] rounded-xl shadow-2xl p-2 space-y-1">
-                    <button
-                      onClick={() => { shareToFacebook(); setShowShareMenu(false) }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-200 hover:bg-[#2a2a2a] transition-colors"
-                    >
-                      <span className="text-base">📘</span>
-                      <span>Facebook</span>
-                    </button>
-                    <button
-                      onClick={() => { shareToInstagram(); setShowShareMenu(false) }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-200 hover:bg-[#2a2a2a] transition-colors"
-                    >
-                      <span className="text-base">📸</span>
-                      <span>Instagram</span>
-                    </button>
-                    <button
-                      onClick={() => { shareToLine(); setShowShareMenu(false) }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-200 hover:bg-[#2a2a2a] transition-colors"
-                    >
-                      <span className="text-base">💬</span>
-                      <span>LINE</span>
-                    </button>
-                    <button
-                      onClick={() => { shareToThreads(); setShowShareMenu(false) }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-200 hover:bg-[#2a2a2a] transition-colors"
-                    >
-                      <span className="text-base">🧵</span>
-                      <span>Threads</span>
-                    </button>
+                    {SHARE_TARGETS.map((target) => (
+                      <button
+                        key={target.id}
+                        onClick={() => { target.action(); setShowShareMenu(false) }}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-200 hover:bg-[#2a2a2a] transition-colors"
+                      >
+                        <span className="text-base">{target.icon}</span>
+                        <span>{target.label}</span>
+                      </button>
+                    ))}
                     <div className="border-t border-[#2e2e2e] my-1" />
                     <button
                       onClick={() => { copyShareLink(); setShowShareMenu(false) }}
