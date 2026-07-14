@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import StarRating from './StarRating'
 import ExifPanel from './ExifPanel'
+import { useTimedFlag } from '@/hooks/useTimedFlag'
 import type { Photo } from '@/types'
 
 const Histogram = dynamic(() => import('./Histogram'), { ssr: false })
@@ -21,7 +22,7 @@ export default function PhotoEditor({ photo, onUpdate, onClose, onPrev, onNext }
   const [appreciation, setAppreciation] = useState(photo.appreciation || '')
   const [showPublic, setShowPublic] = useState(!!photo.show_public)
   const [saving, setSaving] = useState(false)
-  const [savedToast, setSavedToast] = useState(false)
+  const [savedToast, triggerSavedToast] = useTimedFlag(2000)
 
   useEffect(() => {
     setRating(photo.rating)
@@ -52,23 +53,22 @@ export default function PhotoEditor({ photo, onUpdate, onClose, onPrev, onNext }
       })
       const updated = await res.json()
       onUpdate(updated)
-      setSavedToast(true)
-      setTimeout(() => setSavedToast(false), 2000)
+      triggerSavedToast()
     } finally {
       setSaving(false)
     }
-  }, [photo.id, rating, notes, appreciation, showPublic, onUpdate])
+  }, [photo.id, rating, notes, appreciation, showPublic, onUpdate, triggerSavedToast])
 
   const imageUrl = photo.thumbnail_url || photo.full_url || ''
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-0 sm:p-4" onClick={onClose}>
       <div
-        className="relative bg-[#1a1a1a] rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col"
+        className="relative bg-[#1a1a1a] rounded-none sm:rounded-xl shadow-2xl w-full h-full sm:h-auto max-w-5xl sm:max-h-[95vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-3 border-b border-[#2e2e2e]">
+        <div className="flex items-center gap-3 px-4 sm:px-5 py-3 border-b border-[#2e2e2e] flex-shrink-0">
           <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl leading-none flex-shrink-0">×</button>
           <h2 className="text-white font-medium truncate flex-1 text-sm">{photo.filename}</h2>
           <div className="flex items-center gap-1 flex-shrink-0">
@@ -87,15 +87,14 @@ export default function PhotoEditor({ photo, onUpdate, onClose, onPrev, onNext }
           </div>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden">
           {/* Left: Image */}
-          <div className="flex-1 bg-[#111] flex items-center justify-center overflow-hidden min-w-0">
+          <div className="flex-1 bg-[#111] flex items-center justify-center overflow-hidden min-w-0 max-h-[45vh] sm:max-h-none flex-shrink-0">
             {imageUrl ? (
               <img
                 src={imageUrl}
                 alt={photo.filename}
                 className="max-w-full max-h-full object-contain"
-                style={{ maxHeight: 'calc(95vh - 56px)' }}
               />
             ) : (
               <div className="text-gray-600">無預覽</div>
@@ -103,7 +102,7 @@ export default function PhotoEditor({ photo, onUpdate, onClose, onPrev, onNext }
           </div>
 
           {/* Right: Panel */}
-          <div className="w-80 flex flex-col gap-3 p-4 overflow-y-auto border-l border-[#2e2e2e] bg-[#161616]">
+          <div className="w-full sm:w-80 flex flex-col gap-3 p-4 overflow-y-auto sm:border-l border-t sm:border-t-0 border-[#2e2e2e] bg-[#161616] flex-shrink-0">
             {/* Histogram */}
             {imageUrl && <Histogram imageUrl={imageUrl} />}
 

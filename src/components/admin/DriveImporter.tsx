@@ -342,7 +342,7 @@ export default function DriveImporter({ onImported }: DriveImporterProps) {
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">無預覽</div>
                     )}
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/60 touch-reveal transition-opacity flex items-center justify-center">
                       {file.imported ? (
                         <span className="text-green-400 text-xs font-medium bg-black/50 px-2 py-1 rounded">✓ 已匯入</span>
                       ) : (

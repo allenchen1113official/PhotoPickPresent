@@ -34,3 +34,13 @@ body {
 /* Photo card hover */
 .photo-card { transition: transform 0.2s, box-shadow 0.2s; }
 .photo-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
+
+/* Hover-only overlays that stay visible on touch devices (no group-hover there) */
+@layer utilities {
+  .touch-reveal {
+    @apply opacity-100 md:opacity-0 md:group-hover:opacity-100;
+  }
+  .touch-reveal-slide {
+    @apply translate-y-0 md:translate-y-full md:group-hover:translate-y-0;
+  }
+}

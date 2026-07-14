@@ -69,6 +69,7 @@ async function compressImage(file: File, maxBytes: number): Promise<File> {
 
   let { width, height } = img
   let quality = 0.9
+  let lastBlob: Blob | null = null
 
   for (let attempt = 0; attempt < 8; attempt++) {
     canvas.width = width
@@ -78,10 +79,9 @@ async function compressImage(file: File, maxBytes: number): Promise<File> {
 
     const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality))
     if (!blob) break
+    lastBlob = blob
 
-    if (blob.size <= maxBytes) {
-      return new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' })
-    }
+    if (blob.size <= maxBytes) break
 
     // 先降低畫質，畫質已經很低時改縮小尺寸
     if (quality > 0.5) {
@@ -93,8 +93,7 @@ async function compressImage(file: File, maxBytes: number): Promise<File> {
   }
 
   // 退無可退，回傳最後一次嘗試的結果（即便仍超過上限，至少比原檔小）
-  const finalBlob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.5))
-  return finalBlob ? new File([finalBlob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }) : file
+  return lastBlob ? new File([lastBlob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }) : file
 }
 
 async function uploadToCloudinary(file: File): Promise<{ url: string; publicId: string }> {
@@ -295,7 +294,7 @@ export default function LocalUploader({ onImported }: { onImported: () => void }
                 <img src={f.preview} alt={f.file.name} className="w-full h-full object-cover" />
 
                 <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${
-                  f.status === 'pending'   ? 'bg-black/60 opacity-0 group-hover:opacity-100' :
+                  f.status === 'pending'   ? 'bg-black/60 touch-reveal' :
                   f.status === 'uploading' ? 'bg-black/50 opacity-100' :
                   f.status === 'error'     ? 'bg-black/70 opacity-100' : 'opacity-0'
                 }`}>
@@ -332,7 +331,7 @@ export default function LocalUploader({ onImported }: { onImported: () => void }
                 {f.status === 'pending' && (
                   <button
                     onClick={e => { e.stopPropagation(); removeFile(f.id) }}
-                    className="absolute top-1.5 left-1.5 w-5 h-5 bg-black/60 rounded-full hidden group-hover:flex items-center justify-center text-white text-xs hover:bg-red-600 transition-colors"
+                    className="absolute top-1.5 left-1.5 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center text-white text-xs hover:bg-red-600 transition-colors"
                   >
                     ×
                   </button>
