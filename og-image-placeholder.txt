@@ -1,0 +1,2 @@
+請將你的 OG 封面圖命名為 og-image.jpg（建議尺寸 1200x630px）放入此資料夾。
+這張圖會在 Facebook / LINE / Twitter 分享時顯示為預覽縮圖。
